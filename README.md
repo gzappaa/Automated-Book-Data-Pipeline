@@ -38,7 +38,7 @@ Automated-Book-Data-Pipeline/
 
 1. **Clone the repo**
 ```
-git clone <your-repo-url>
+git clone https://github.com/gzappaa/Automated-Book-Data-Pipeline
 cd Automated-Book-Data-Pipeline
 ```
 
@@ -52,4 +52,5 @@ pip install -r requirements.txt
 
 ```
 python -m src.scraper
-```#
+```
+
