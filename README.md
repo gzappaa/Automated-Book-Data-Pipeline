@@ -1,34 +1,60 @@
 # Automated Book Data Pipeline
 
 ## Overview
-This project scrapes book data from [Books to Scrape](https://books.toscrape.com/), processes it, and saves it in structured formats. It also includes unit tests to ensure data integrity.
+This project scrapes book data from Books to Scrape, calculates analytics, and generates reports in PDF and Excel formats. Unit tests ensure data integrity.
 
 ## Features
-- Scrapes:
-  - Title
-  - Price
-  - Rating
-  - Image URL
-- Cleans and converts price to float
-- Converts star rating to integer
-- Saves data in `JSON` format
-- Includes unit tests using `unittest`
-- Designed to be easily extended (image download, PDF report, etc.)
+Scrapes:
+
+Title
+
+Price
+
+Rating
+
+Image URL
+
+Cleans and converts price to float
+
+Converts star rating to integer
+
+Calculates analytics:
+
+Total books
+
+Average, min, max prices
+
+Most expensive & cheapest books
+
+Saves data in JSON format
+
+Generates:
+
+PDF report
+
+Excel report
+
+Includes unit tests using unittest
+
+Easily extensible (image download, extra analytics, etc.)
 
 ## Project Structure
 
 ``` 
 Automated-Book-Data-Pipeline/
 │
-├── data/ # scraped JSON will be saved here
+├── data/
 │
 ├── src/
-│ ├── init.py
-│ └── scraper.py # main scraper code
+│   ├── __init__.py
+│   ├── scraper.py
+│   ├── analytics.py
+│   ├── report.py
+│   └── main.py
 │
 ├── tests/
-│ ├── init.py
-│ └── test_scraper.py # main scraper code
+│   ├── __init__.py
+│   └── test_scraper.py
 │
 ├── README.md
 └── requirements.txt
