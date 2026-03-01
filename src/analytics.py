@@ -30,7 +30,7 @@ def calculate_stats_from_json(filepath="data/books.json"):
         "max_price": max_price,
         "min_price": min_price,
         "most_expensive": most_expensive,
-        "cheapest": cheapest
+        "cheapest": cheapest,
+        "books": books
     }
 
-print(calculate_stats_from_json())

@@ -4,6 +4,8 @@ import json
 import os
 from urllib.parse import urljoin
 
+
+# function to scrape book data from the website and return a list of dictionaries
 def get_book_list():
     BASE_URL = "https://books.toscrape.com/"
     res = requests.get(BASE_URL)
@@ -36,6 +38,7 @@ def get_book_list():
 if __name__ == "__main__":
     books = get_book_list()
     
+    # create books.json 
     with open("data/books.json", "w", encoding="utf-8") as f:
         json.dump(books, f, ensure_ascii=False, indent=4)
 
