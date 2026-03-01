@@ -38,6 +38,8 @@ Includes unit tests using unittest
 
 Easily extensible (image download, extra analytics, etc.)
 
+Dockerized 
+
 ## Project Structure
 
 ``` 
@@ -57,7 +59,8 @@ Automated-Book-Data-Pipeline/
 │   └── test_scraper.py
 │
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+└── Dockerfile
 ```
 
 ## Getting Started
@@ -79,4 +82,14 @@ pip install -r requirements.txt
 ```
 python -m src.scraper
 ```
+## Run with Docker
 
+```
+docker build -t book-pipeline .
+```
+
+# Run the container (maps local data/ folder for PDF/Excel output):
+
+```
+docker run --rm -v ${PWD}/data:/app/data book-pipeline
+```
