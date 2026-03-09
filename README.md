@@ -18,6 +18,8 @@ Cleans and converts price to float
 
 Converts star rating to integer
 
+Download the books covers
+
 Calculates analytics:
 
 Total books
@@ -52,10 +54,12 @@ Automated-Book-Data-Pipeline/
 │   ├── scraper.py
 │   ├── analytics.py
 │   ├── report.py
+│   ├── cover_downloader.py
 │   └── main.py
 │
 ├── tests/
 │   ├── __init__.py
+│    ├── test_cover_downloader.py 
 │   └── test_scraper.py
 │
 ├── README.md
@@ -93,3 +97,4 @@ docker build -t book-pipeline .
 ```
 docker run --rm -v ${PWD}/data:/app/data book-pipeline
 ```
+
