@@ -12,14 +12,20 @@ import json
 from .scraper import get_book_list
 from .analytics import calculate_stats_from_json
 from .report import generate_pdf, generate_excel
+from .cover_downloader import download_images
 
 # ===== Create data folder if it doesn't exist =====
 os.makedirs("data", exist_ok=True)
+os.makedirs("data/images", exist_ok=True)
 
-# ===== Step 1: Scrape book data =====
+# ===== Step 1: Scrape book data & Download images =====
 print("Scraping book data...")
 books = get_book_list()
 print(f"{len(books)} books scraped successfully.")
+
+# ===== Download book images =====  
+print("Downloading book images...")
+download_images(books, folder="data/images")
 
 # ===== Step 2: Save scraped data to JSON =====
 books_json_path = "data/books.json"
@@ -32,7 +38,7 @@ print("Calculating analytics...")
 stats = calculate_stats_from_json(books_json_path)
 print("Analytics calculated successfully.")
 
-# ===== Step 4: Generate PDF report =====
+# ===== Step 4: Generate PDF report + Excel report =====
 report_path = "data/book_report.pdf"
 print("Generating PDF report...")
 generate_pdf(stats, output_path=report_path)
