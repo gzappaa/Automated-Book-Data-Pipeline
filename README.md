@@ -16,6 +16,8 @@ Image URL
 
 Cleans and converts price to float
 
+Details of each book(description, availability, UPC, Product Type, Tax, number of reviews)
+
 Converts star rating to integer
 
 Download the books covers
@@ -36,7 +38,7 @@ PDF report
 
 Excel report
 
-Includes unit tests using unittest
+Includes unit tests and mock tests using unittest
 
 Easily extensible (image download, extra analytics, etc.)
 
@@ -59,7 +61,8 @@ Automated-Book-Data-Pipeline/
 │
 ├── tests/
 │   ├── __init__.py
-│    ├── test_cover_downloader.py 
+│   ├── test_cover_downloader.py 
+│   ├── test_scraper_mock.py 
 │   └── test_scraper.py
 │
 ├── README.md
