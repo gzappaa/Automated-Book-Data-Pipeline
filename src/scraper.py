@@ -3,13 +3,17 @@ from bs4 import BeautifulSoup
 import json
 import os
 from urllib.parse import urljoin
+import re
 
+
+def get_soup(url):
+    res = requests.get(url)
+    return BeautifulSoup(res.text, "html.parser")
 
 # function to scrape book data from the website and return a list of dictionaries
 def get_book_list():
     BASE_URL = "https://books.toscrape.com/"
-    res = requests.get(BASE_URL)
-    soup = BeautifulSoup(res.text, "html.parser")
+    soup = get_soup(BASE_URL)
     books_html = soup.find_all("article", class_="product_pod")
 
     book_list = []
@@ -17,8 +21,7 @@ def get_book_list():
         title = book.h3.a["title"]
         
         price_text = book.find("p", class_="price_color").text
-        price_clean = ''.join(c for c in price_text if c.isdigit() or c == '.')
-        price = float(price_clean)
+        price = float(re.search(r'\d+\.\d+', price_text).group())
         
         rating_class = book.find("p", class_="star-rating")["class"]
         rating_dict = {"One":1, "Two":2, "Three":3, "Four":4, "Five":5}

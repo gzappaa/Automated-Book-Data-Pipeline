@@ -1,5 +1,5 @@
 import unittest
-from src.scraper import get_book_list
+from src.scraper import get_book_list, get_soup
 
 class TestBookScraper(unittest.TestCase):
 
@@ -7,6 +7,11 @@ class TestBookScraper(unittest.TestCase):
     def setUpClass(cls):
         # Run the scraper once for the entire test class
         cls.book_list = get_book_list()
+
+    def test_get_soup(self):
+        from src.scraper import get_soup
+        soup = get_soup("https://books.toscrape.com/")
+        self.assertEqual(soup.__class__.__name__, "BeautifulSoup")
 
     # Test if the book list is not empty
     def test_scrape_not_empty(self):
