@@ -7,8 +7,13 @@ import re
 
 BASE_URL = "https://books.toscrape.com/"
 
+# helper function to parse price string like "A£51.77" to float 51.77
+def parse_price(v):
+    return float(re.search(r"\d+\.\d+", v).group())
+
+# get BeautifulSoup object from a URL
 def get_soup(url):
-    res = requests.get(url)
+    res = requests.get(url, timeout=30)
     return BeautifulSoup(res.text, "html.parser")
 
 # function to get all book URLs from the main page
@@ -41,10 +46,19 @@ def get_book_details(book_url):
     # get table data (UPC, Tax, etc.)
     table = soup.find("table", class_="table table-striped")
     table_data = {}
+    PARSERS = {
+        "Price (excl. tax)": parse_price,
+        "Price (incl. tax)": parse_price,
+        "Tax": parse_price,
+        "Number of reviews": int
+    }
+
     if table:
         for row in table.find_all("tr"):
             key = row.find("th").text
-            value = row.find("td").text
+            value = row.find("td").text.strip()
+            if key in PARSERS:
+                value = PARSERS[key](value)  # apply the appropriate parser if it's a price or number
             table_data[key] = value
 
     # return a dictionary with the scraped details
