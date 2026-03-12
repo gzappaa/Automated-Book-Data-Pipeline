@@ -32,6 +32,7 @@ class TestBookScraperMock(unittest.TestCase):
     def test_scrape_not_empty(self):
         self.assertTrue(len(self.book_list) > 0)
 
+
     def test_books_fields(self):
         for book in self.book_list:
             self.assertIn("title", book)

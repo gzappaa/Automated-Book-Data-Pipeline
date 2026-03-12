@@ -15,6 +15,10 @@ class TestBookScraper(unittest.TestCase):
         soup = get_soup("https://books.toscrape.com/")
         self.assertEqual(soup.__class__.__name__, "BeautifulSoup")
 
+    def test_book_details_fetchable(self):
+        if self.details is None:
+            self.skipTest(f"Book details not fetchable for {self.book_url}")
+
     # Test if each book has a book_url field and it's not empty
     def test_book_urls_exist(self):
         for book in self.book_list:

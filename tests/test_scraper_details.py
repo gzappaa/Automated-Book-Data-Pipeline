@@ -6,11 +6,11 @@ class TestBookDetailsReal(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # pega um livro real do site
+        # get the first book URL from the list to test the details scraping
         book_list = get_book_list()
         cls.book_url = book_list[0]["book_url"]
 
-        # pega os detalhes reais
+        # get the real details
         cls.details = get_book_details(cls.book_url)
         cls.table = cls.details["table_data"]
 
