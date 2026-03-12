@@ -78,7 +78,7 @@ class BookParser:
         # Return the text stripped of whitespace, or empty string if not found
         return avail_tag.text.strip() if avail_tag else ""
     
-    
+
     # ------------------------------
     # Parse a book from catalog HTML
     # ------------------------------
@@ -100,7 +100,9 @@ class BookParser:
 
         # Get book detail URL
         relative_url = book_html.h3.a["href"]
-        book_url = urljoin(base_url, relative_url)
+        if not relative_url.startswith("catalogue/"):
+            relative_url = f"catalogue/{relative_url}"
+        book_url = urljoin(BASE_URL, relative_url)
 
         # Return dictionary with parsed book info
         return {

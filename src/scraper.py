@@ -60,23 +60,30 @@ def get_book_details(book_url):
 
 
 # function to scrape book data from the website and return a list of dictionaries
-def get_book_list():
-    soup = get_soup(BASE_URL)
-    if soup is None:
-        print(f"Skipping, failed to fetch main page")
-        return []
-    
-    books_html = soup.find_all("article", class_="product_pod")
-
-    book_list = []
-    for book_html in books_html:
-        book_data = BookParser.parse_book(book_html)
-        book_list.append(book_data)
-    return book_list
+def get_all_books():
+    all_books = []
+    page_num = 1
+    while True:
+        if page_num == 1:
+            url = BASE_URL
+        elif page_num == 51:
+            break  # we know there are only 50 pages, so we can stop after page 50
+        else:
+            url = urljoin(BASE_URL, f"catalogue/page-{page_num}.html")
+        soup = get_soup(url)
+        if soup is None:
+            break
+        books_html = soup.find_all("article", class_="product_pod")
+        if not books_html:
+            break
+        for book_html in books_html:
+            all_books.append(BookParser.parse_book(book_html))
+        page_num += 1
+    return all_books
 
 # This function combines the basic book list with the details from each book's page
 def get_book_list_with_details():
-    books = get_book_list()  # get basic book info from the main page
+    books = get_all_books()  # get basic book info from the main page
 
     for book in books:
         details = get_book_details(book["book_url"])  # get details from the book's detail page
@@ -86,7 +93,7 @@ def get_book_list_with_details():
 
 
 if __name__ == "__main__":
-    books = get_book_list()
+    books = get_all_books()
     
     # create books.json 
     with open("data/books.json", "w", encoding="utf-8") as f:
@@ -95,7 +102,8 @@ if __name__ == "__main__":
     print(f"{len(books)} books saved to data/books.json")
 
     #create books_with_details.json
-    books_with_details = get_book_list_with_details()
-    with open("data/books_with_details.json", "w", encoding="utf-8") as f:
-        json.dump(books_with_details, f, ensure_ascii=False, indent=4)
-    print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")
+    if False:  # set to True to run this part
+        books_with_details = get_book_list_with_details()
+        with open("data/books_with_details.json", "w", encoding="utf-8") as f:
+            json.dump(books_with_details, f, ensure_ascii=False, indent=4)
+        print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")

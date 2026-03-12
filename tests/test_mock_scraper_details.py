@@ -4,23 +4,22 @@ from src.scraper import get_book_details
 
 BOOK_DETAIL_HTML_PATH = "tests/data/book_detail.html"
 
-
 class TestBookDetailsMock(unittest.TestCase):
 
-    @patch("requests.get")
-    def setUp(self, mock_get):
+    def setUp(self):
+        # Patch requests.get inside setUp
+        with patch("requests.get") as mock_get:
+            mock_response = Mock()
+            with open(BOOK_DETAIL_HTML_PATH, "r", encoding="utf-8") as f:
+                mock_response.text = f.read()
+            mock_get.return_value = mock_response
 
-        mock_response = Mock()
-
-        with open(BOOK_DETAIL_HTML_PATH, "r", encoding="utf-8") as f:
-            mock_response.text = f.read()
-
-        mock_get.return_value = mock_response
-
-        self.details = get_book_details("fake_url")
-        self.table = self.details["table_data"]
+            # Call get_book_details with any fake URL (mocked)
+            self.details = get_book_details("fake_url")
+            self.table = self.details["table_data"]
 
     def test_table_fields_exist(self):
+        # Ensure all expected table fields are present
         self.assertIn("UPC", self.table)
         self.assertIn("Product Type", self.table)
         self.assertIn("Price (excl. tax)", self.table)
@@ -30,6 +29,7 @@ class TestBookDetailsMock(unittest.TestCase):
         self.assertIn("Number of reviews", self.table)
 
     def test_types(self):
+        # Ensure all table fields have correct types
         self.assertIsInstance(self.table["UPC"], str)
         self.assertIsInstance(self.table["Product Type"], str)
         self.assertIsInstance(self.table["Price (excl. tax)"], float)
