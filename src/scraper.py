@@ -12,51 +12,65 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
 
 
-# get BeautifulSoup object from a URL
+
+# get BeautifulSoup object from a URL, retrying on timeout, and forcing UTF-8 encoding to avoid mojibake issues
 def get_soup(url):
-    """Return BeautifulSoup object for the URL, retrying on timeout."""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             res = requests.get(url, timeout=30)
-            res.raise_for_status()  # garante que status != 200 levanta exceção
+            res.raise_for_status()
+            res.encoding = 'utf-8'  # force correct encoding
             return BeautifulSoup(res.text, "html.parser")
         except (requests.Timeout, requests.ConnectionError) as e:
             print(f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}")
             if attempt < MAX_RETRIES:
-                print(f"Retrying in {RETRY_DELAY} seconds...")
                 time.sleep(RETRY_DELAY)
             else:
                 print(f"Failed to fetch {url} after {MAX_RETRIES} attempts.")
-                return None  # maybe raise? if we want to handle this at a higher level
+                return None
         except requests.HTTPError as e:
             print(f"HTTP error for {url}: {e}")
             return None
 
 
+# clean and normalize book description text
+def clean_description(text):
+    if not text:
+        return ""
+    # Fix common mojibake caused by wrong encoding
+    text = text.replace("â", "\"").replace("â", "\"")  # quotes
+    text = text.replace("â", "-")  # en-dash
+    text = text.replace("â", "'")  # apostrophe
+    text = text.replace("â¦", "...")  # ellipsis
+    # Optional: remove duplicated spaces / newlines
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 # function to scrape book details from the book detail page
 def get_book_details(book_url):
+    """Scrape book details and return dictionary with cleaned description."""
     soup = get_soup(book_url)
     if soup is None:
         print(f"Skipping {book_url}")
         return {}
 
-    # get description using BookParser
-    description = BookParser.parse_description(soup)
+    # parse description using BookParser
+    raw_description = BookParser.parse_description(soup)
+    description = clean_description(raw_description)
 
-    # get availability using BookParser
+    # parse availability using BookParser
     availability_text = BookParser.parse_availability(soup)
 
-    # get table data using BookParser
+    # parse table data using BookParser
     table = soup.find("table", class_="table table-striped")
     table_data = BookParser.parse_table(table)
 
-    # return a dictionary with the scraped details
     return {
         "description": description,
         "availability": availability_text,
         "table_data": table_data
     }
-
 
 
 # function to scrape book data from the website and return a list of dictionaries
@@ -102,7 +116,7 @@ if __name__ == "__main__":
     print(f"{len(books)} books saved to data/books.json")
 
     #create books_with_details.json
-    if False:  # set to True to run this part
+    if True:  # set to True to run this part
         books_with_details = get_book_list_with_details()
         with open("data/books_with_details.json", "w", encoding="utf-8") as f:
             json.dump(books_with_details, f, ensure_ascii=False, indent=4)

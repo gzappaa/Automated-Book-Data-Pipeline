@@ -7,3 +7,4 @@ images
 books_with_details.json
 tests/data/html.py
 test.py
+books_with_categories.json

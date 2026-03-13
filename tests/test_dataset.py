@@ -29,6 +29,11 @@ class TestBooksJSON(unittest.TestCase):
         # Define the images folder path
         cls.images_folder = Path("data/images")
 
+        # Load categories JSON
+        categories_json_path = Path("data/books_with_categories.json")
+        with categories_json_path.open("r", encoding="utf-8") as f:
+            cls.books_with_categories = json.load(f)
+
     def test_all_books_have_required_fields(self):
         """All books must have title, table_data, and UPC"""
         for book in self.books:
@@ -71,6 +76,13 @@ class TestBooksJSON(unittest.TestCase):
                 price = book.get("price")
                 self.assertIsInstance(price, (int, float), "Price must be a number")
                 self.assertGreaterEqual(price, 0, "Negative price found")
+
+    # All books in the categories JSON must have a non-empty category
+    def test_all_books_have_category(self):
+        for book in self.books_with_categories:
+            with self.subTest(book=book.get("title", "No title")):
+                self.assertIn("category", book, "Category field missing")
+                self.assertTrue(book["category"], "Category cannot be empty")
 
 
 if __name__ == "__main__":
