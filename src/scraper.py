@@ -5,11 +5,15 @@ from pathlib import Path
 from urllib.parse import urljoin
 import time
 import concurrent.futures
+from threading import Lock
 from .parser import BookParser
 
 BASE_URL = "https://books.toscrape.com/"
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
+
+# Lock for thread-safe progress printing
+progress_lock = Lock()
 
 
 def get_soup(url):
@@ -39,13 +43,11 @@ def get_book_details(book_url):
         print(f"Skipping {book_url}")
         return {}
 
-    # Parse description, availability, and table data
     description = BookParser.parse_description(soup)
     availability_text = BookParser.parse_availability(soup)
     table = soup.find("table", class_="table table-striped")
     table_data = BookParser.parse_table(table)
 
-    # Extract category from breadcrumb (3rd <a> tag)
     breadcrumb_links = soup.select("ul.breadcrumb li a")
     category = breadcrumb_links[2].text.strip() if len(breadcrumb_links) > 2 else "Unknown"
 
@@ -58,11 +60,13 @@ def get_book_details(book_url):
 
 
 def get_all_books():
-    """Scrape all books from paginated pages with simple progress marks."""
+    """Scrape all books from paginated pages with thread-safe progress prints."""
     all_books = []
     total_pages = 50
-    milestones = {0.25, 0.5, 0.75}  # 25%, 50%, 75%
-    
+    milestones = {0.25, 0.5, 0.75}
+
+    milestones_lock = Lock()
+
     def process_page(page_num):
         url = BASE_URL if page_num == 1 else urljoin(BASE_URL, f"catalogue/page-{page_num}.html")
         soup = get_soup(url)
@@ -73,13 +77,14 @@ def get_all_books():
         books_html = soup.find_all("article", class_="product_pod")
         page_books = [BookParser.parse_book(b) for b in books_html]
 
-        # Print simple progress
+        # Thread-safe progress printing
         progress = page_num / total_pages
-        for m in sorted(milestones):
-            if progress >= m:
-                print(f"Progress: {int(m*100)}%")
-                milestones.remove(m)
-                break
+        with milestones_lock:
+            for m in sorted(milestones):
+                if progress >= m:
+                    print(f"Progress: {int(m*100)}%")
+                    milestones.remove(m)
+                    break
 
         return page_books
 
@@ -93,18 +98,20 @@ def get_all_books():
     return all_books
 
 
-def get_book_list_with_details():
+def get_book_list_with_details(books):
     """Fetch all books with their detailed info in parallel, including category."""
-    total_books = 1000
+    total_books = len(books)
     book_counter = 0
+    counter_lock = Lock()
 
     def fetch_details(book):
         nonlocal book_counter
         details = get_book_details(book["book_url"])
         book.update(details)
-        book_counter += 1
-        if book_counter % 50 == 0:
-            print(f"Book {book_counter}/{total_books} processed")
+        with counter_lock:
+            book_counter += 1
+            if book_counter % 50 == 0:
+                print(f"Book {book_counter}/{total_books} processed")
         return book
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
@@ -115,14 +122,15 @@ def get_book_list_with_details():
 
 
 if __name__ == "__main__":
+    # Step 1: Scrape all books
     books = get_all_books()
     Path("data").mkdir(exist_ok=True)
-
     with open("data/books.json", "w", encoding="utf-8") as f:
         json.dump(books, f, ensure_ascii=False, indent=4)
     print(f"{len(books)} books saved to data/books.json")
 
-    books_with_details = get_book_list_with_details()
+    # Step 2: Fetch detailed info
+    books_with_details = get_book_list_with_details(books)
     with open("data/books_raw.json", "w", encoding="utf-8") as f:
         json.dump(books_with_details, f, ensure_ascii=False, indent=4)
     print(f"{len(books_with_details)} books with details saved to data/books_raw.json")
