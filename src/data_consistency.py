@@ -1,7 +1,13 @@
 import json
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+
+
 
 # Load the books JSON
-with open("data/books_with_categories.json", "r", encoding="utf-8") as f:
+with open("data/books_with_details.json", "r", encoding="utf-8") as f:
     books = json.load(f)
 
 # 1️⃣ Check if all Product Types are "Books"
@@ -43,3 +49,4 @@ if books_with_reviews:
         print("-", t)
 else:
     print("All books have Number of reviews = 0.")
+

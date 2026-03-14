@@ -1,10 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import os
+from pathlib import Path
 from urllib.parse import urljoin
-import re
 import time
+import concurrent.futures
 from .parser import BookParser
 
 BASE_URL = "https://books.toscrape.com/"
@@ -12,14 +12,13 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
 
 
-
-# get BeautifulSoup object from a URL, retrying on timeout, and forcing UTF-8 encoding to avoid mojibake issues
 def get_soup(url):
+    """Return BeautifulSoup object from URL with retries and UTF-8 encoding."""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             res = requests.get(url, timeout=30)
             res.raise_for_status()
-            res.encoding = 'utf-8'  # force correct encoding
+            res.encoding = 'utf-8'
             return BeautifulSoup(res.text, "html.parser")
         except (requests.Timeout, requests.ConnectionError) as e:
             print(f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}")
@@ -33,91 +32,94 @@ def get_soup(url):
             return None
 
 
-# clean and normalize book description text
-def clean_description(text):
-    if not text:
-        return ""
-    # Fix common mojibake caused by wrong encoding
-    text = text.replace("â", "\"").replace("â", "\"")  # quotes
-    text = text.replace("â", "-")  # en-dash
-    text = text.replace("â", "'")  # apostrophe
-    text = text.replace("â¦", "...")  # ellipsis
-    # Optional: remove duplicated spaces / newlines
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-# function to scrape book details from the book detail page
 def get_book_details(book_url):
-    """Scrape book details and return dictionary with cleaned description."""
+    """Scrape book details including description, availability, table data, and category from breadcrumb."""
     soup = get_soup(book_url)
     if soup is None:
         print(f"Skipping {book_url}")
         return {}
 
-    # parse description using BookParser
-    raw_description = BookParser.parse_description(soup)
-    description = clean_description(raw_description)
-
-    # parse availability using BookParser
+    # Parse description, availability, and table data
+    description = BookParser.parse_description(soup)
     availability_text = BookParser.parse_availability(soup)
-
-    # parse table data using BookParser
     table = soup.find("table", class_="table table-striped")
     table_data = BookParser.parse_table(table)
+
+    # Extract category from breadcrumb (3rd <a> tag)
+    breadcrumb_links = soup.select("ul.breadcrumb li a")
+    category = breadcrumb_links[2].text.strip() if len(breadcrumb_links) > 2 else "Unknown"
 
     return {
         "description": description,
         "availability": availability_text,
-        "table_data": table_data
+        "table_data": table_data,
+        "category": category
     }
 
 
-# function to scrape book data from the website and return a list of dictionaries
 def get_all_books():
+    """Scrape all books from main pages (paginated) with progress prints."""
     all_books = []
-    page_num = 1
-    while True:
-        if page_num == 1:
-            url = BASE_URL
-        elif page_num == 51:
-            break  # we know there are only 50 pages, so we can stop after page 50
-        else:
-            url = urljoin(BASE_URL, f"catalogue/page-{page_num}.html")
+    total_pages = 50
+    book_counter = 0
+
+    def process_page(page_num):
+        nonlocal book_counter
+        url = BASE_URL if page_num == 1 else urljoin(BASE_URL, f"catalogue/page-{page_num}.html")
         soup = get_soup(url)
         if soup is None:
-            break
+            print(f"Page {page_num} failed to load.")
+            return []
+
         books_html = soup.find_all("article", class_="product_pod")
-        if not books_html:
-            break
+        page_books = []
         for book_html in books_html:
-            all_books.append(BookParser.parse_book(book_html))
-        page_num += 1
+            book_counter += 1
+            page_books.append(BookParser.parse_book(book_html))
+            print(f"Processing book {book_counter}/1000")
+        print(f"Page {page_num}/{total_pages} done with {len(page_books)} books")
+        return page_books
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        results = executor.map(process_page, range(1, total_pages + 1))
+
+    for page_books in results:
+        all_books.extend(page_books)
+
+    print(f"Total books collected: {len(all_books)}")
     return all_books
 
-# This function combines the basic book list with the details from each book's page
+
 def get_book_list_with_details():
-    books = get_all_books()  # get basic book info from the main page
+    """Fetch all books with their detailed info in parallel, including category."""
+    books = get_all_books()
+    total_books = len(books)
+    book_counter = 0
 
-    for book in books:
-        details = get_book_details(book["book_url"])  # get details from the book's detail page
-        book.update(details)  # add the details to the existing dictionary
+    def fetch_details(book):
+        nonlocal book_counter
+        details = get_book_details(book["book_url"])
+        book.update(details)
+        book_counter += 1
+        print(f"Book {book_counter}/{total_books} processed")
+        return book
 
-    return books
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        books_with_details = list(executor.map(fetch_details, books))
+
+    print(f"All {total_books} books with details processed.")
+    return books_with_details
 
 
 if __name__ == "__main__":
     books = get_all_books()
-    
-    # create books.json 
+    Path("data").mkdir(exist_ok=True)
+
     with open("data/books.json", "w", encoding="utf-8") as f:
         json.dump(books, f, ensure_ascii=False, indent=4)
-
     print(f"{len(books)} books saved to data/books.json")
 
-    #create books_with_details.json
-    if True:  # set to True to run this part
-        books_with_details = get_book_list_with_details()
-        with open("data/books_with_details.json", "w", encoding="utf-8") as f:
-            json.dump(books_with_details, f, ensure_ascii=False, indent=4)
-        print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")
+    books_with_details = get_book_list_with_details()
+    with open("data/books_with_details.json", "w", encoding="utf-8") as f:
+        json.dump(books_with_details, f, ensure_ascii=False, indent=4)
+    print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")

@@ -65,10 +65,22 @@ class BookParser:
     # ------------------------------
     @staticmethod
     def parse_description(soup):
-        # Get meta description tag
         desc_tag = soup.find("meta", attrs={"name": "description"})
-        # Return description text or empty string
-        return desc_tag["content"].strip() if desc_tag else ""
+        if not desc_tag:
+            return ""
+        
+        text = desc_tag["content"].strip()
+        
+        # Cleaning common encoding issues
+        text = text.replace("â", "\"").replace("â", "\"")  # aspas
+        text = text.replace("â", "-")  # en-dash
+        text = text.replace("â", "'")  # apóstrofe
+        text = text.replace("â¦", "...")  # reticências
+        
+        # Remove spaces and extra line breaks
+        text = re.sub(r"\s+", " ", text).strip()
+        
+        return text
     
     # Parse availability text
     @staticmethod

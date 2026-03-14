@@ -4,38 +4,27 @@ from pathlib import Path
 from urllib.parse import urlparse
 from re import sub
 
-'''
-UNITTEST FOR BOOKS JSON AND IMAGE FILES
+def normalize_category(name):
+    return name.strip().lower()
 
-Note: This test should only be run **after all main scripts have been executed**.
-It validates:
-
-1. All books have required fields: title, table_data, and UPC
-2. UPCs are unique
-3. image_url is valid
-4. Price is positive
-5. All downloaded image files exist on disk (in data/images)
-
-Make sure to run this test after all main scripts have been executed.
-'''
 
 class TestBooksJSON(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Load JSON once for all tests
+        # Load detailed books JSON
         json_path = Path("data/books_with_details.json")
         with json_path.open("r", encoding="utf-8") as f:
             cls.books = json.load(f)
-        # Define the images folder path
+
+        # Load category JSON
+        with Path("data/category_books_urls.json").open("r", encoding="utf-8") as f:
+            cls.books_by_category = json.load(f)
+
+        # Images folder
         cls.images_folder = Path("data/images")
 
-        # Load categories JSON
-        categories_json_path = Path("data/books_with_categories.json")
-        with categories_json_path.open("r", encoding="utf-8") as f:
-            cls.books_with_categories = json.load(f)
-
     def test_all_books_have_required_fields(self):
-        """All books must have title, table_data, and UPC"""
+        # All books should have title, table_data with UPC, and a non-empty UPC
         for book in self.books:
             with self.subTest(book=book.get("title", "No title")):
                 self.assertIn("title", book)
@@ -44,12 +33,12 @@ class TestBooksJSON(unittest.TestCase):
                 self.assertTrue(book["table_data"]["UPC"], "UPC cannot be empty")
 
     def test_no_duplicate_upc(self):
-        """No duplicate UPCs should exist"""
+        # All UPCs should be unique
         upcs = [b["table_data"]["UPC"] for b in self.books if "table_data" in b and "UPC" in b["table_data"]]
         self.assertEqual(len(upcs), len(set(upcs)), "Duplicate UPCs found")
 
     def test_image_url_valid(self):
-        """All books must have a valid image_url"""
+        # All books should have a valid image URL
         for book in self.books:
             with self.subTest(book=book.get("title", "No title")):
                 self.assertIn("image_url", book)
@@ -58,11 +47,11 @@ class TestBooksJSON(unittest.TestCase):
                 self.assertTrue(parsed.scheme in ("http", "https"), f"Invalid URL: {url}")
 
     def test_image_file_exists(self):
-        """Check that the downloaded image file exists on disk"""
+        # All books should have an image file saved with the correct filename pattern
         for book in self.books:
             with self.subTest(book=book.get("title", "No title")):
                 upc = book["table_data"]["UPC"]
-                # Filename pattern used in downloader: UPC + safe title
+                # Filename pattern: UPC + safe title
                 safe_title = sub(r'[<>:"/\\|?*]', '_', book['title']).strip().lower()
                 safe_title = sub(r'[\s_]+', '_', safe_title)
                 filename = f"{upc}_{safe_title}.jpg"
@@ -70,19 +59,60 @@ class TestBooksJSON(unittest.TestCase):
                 self.assertTrue(filepath.exists(), f"Image file missing: {filename}")
 
     def test_price_positive(self):
-        """The price should be a positive number"""
+        # All books should have a non-negative price
         for book in self.books:
             with self.subTest(book=book.get("title", "No title")):
                 price = book.get("price")
                 self.assertIsInstance(price, (int, float), "Price must be a number")
                 self.assertGreaterEqual(price, 0, "Negative price found")
 
-    # All books in the categories JSON must have a non-empty category
     def test_all_books_have_category(self):
-        for book in self.books_with_categories:
+        # All books should have a non-empty category field
+        for book in self.books:
             with self.subTest(book=book.get("title", "No title")):
                 self.assertIn("category", book, "Category field missing")
                 self.assertTrue(book["category"], "Category cannot be empty")
+
+    def test_category_counts_match(self):
+        # group counts from detailed JSON by normalized category
+        counts_detailed = {}
+        for book in self.books:
+            cat = book.get("category")
+            if cat:
+                cat_norm = normalize_category(cat)
+                counts_detailed[cat_norm] = counts_detailed.get(cat_norm, 0) + 1
+
+        # compare counts with simple JSON (also normalize key)
+        for category, urls in self.books_by_category.items():
+            with self.subTest(category=category):
+                cat_norm = normalize_category(category)
+                count_detailed = counts_detailed.get(cat_norm, 0)
+                self.assertEqual(len(urls), count_detailed,
+                                 f"Mismatch in count for category '{category}': "
+                                 f"{len(urls)} in simple JSON vs {count_detailed} in detailed JSON")
+
+    def test_category_urls_match(self):
+        # group URLs from detailed JSON by normalized category
+        urls_detailed = {}
+        for book in self.books:
+            cat = book.get("category")
+            url = book.get("book_url")
+            if cat and url:
+                cat_norm = normalize_category(cat)
+                urls_detailed.setdefault(cat_norm, []).append(url)
+
+        # compare URLs for each category
+        for category, urls_simple in self.books_by_category.items():
+            with self.subTest(category=category):
+                cat_norm = normalize_category(category)
+                detailed_urls = urls_detailed.get(cat_norm, [])
+                missing_urls = [url for url in detailed_urls if url not in urls_simple]
+                self.assertFalse(missing_urls,
+                                 f"Missing URLs in simple JSON for category '{category}': {missing_urls}")
+
+
+
+
 
 
 if __name__ == "__main__":
