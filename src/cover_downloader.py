@@ -83,7 +83,7 @@ def download_images(books, folder="data/images", max_workers=30):
 # Run as script
 # ------------------------------
 if __name__ == "__main__":
-    books_json_path = Path("data/books_with_details.json")
+    books_json_path = Path("data/books_raw.json")
     if not books_json_path.exists():
         raise FileNotFoundError(f"JSON file not found: {books_json_path}")
 

@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 
 
 # Load the books JSON
-with open("data/books_with_details.json", "r", encoding="utf-8") as f:
+with open("data/books_raw.json", "r", encoding="utf-8") as f:
     books = json.load(f)
 
 # 1️⃣ Check if all Product Types are "Books"

@@ -4,12 +4,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pathlib import Path
 
-# GENERATES AN OPTIONAL BUT IMPORTANT JSON WITH THE URLS OF THE BOOKS BY CATEGORY, 
+# GENERATES AN IMPORTANT JSON WITH THE URLS OF THE BOOKS BY CATEGORY, 
 # TO FACILITATE TESTING AND FUTURE ANALYSIS
 
 
 BASE_CATEGORY_URL = "https://books.toscrape.com/catalogue/category/books/"
-OUTPUT_JSON_PATH = Path("data/category_books_urls.json")
+OUTPUT_JSON_PATH = Path("data/books_by_category.json")
 
 CATEGORIES = [
     "travel_2", "mystery_3", "historical-fiction_4", "sequential-art_5",

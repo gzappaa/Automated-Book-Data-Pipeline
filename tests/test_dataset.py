@@ -12,12 +12,12 @@ class TestBooksJSON(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Load detailed books JSON
-        json_path = Path("data/books_with_details.json")
+        json_path = Path("data/books_raw.json")
         with json_path.open("r", encoding="utf-8") as f:
             cls.books = json.load(f)
 
         # Load category JSON
-        with Path("data/category_books_urls.json").open("r", encoding="utf-8") as f:
+        with Path("data/books_by_category.json").open("r", encoding="utf-8") as f:
             cls.books_by_category = json.load(f)
 
         # Images folder
@@ -45,6 +45,13 @@ class TestBooksJSON(unittest.TestCase):
                 url = book["image_url"]
                 parsed = urlparse(url)
                 self.assertTrue(parsed.scheme in ("http", "https"), f"Invalid URL: {url}")
+
+    def test_images_folder_has_all_files(self):
+        # Count all .jpg files in images folder
+        jpg_files = list(self.images_folder.glob("*.jpg"))
+        expected_count = len(self.books)
+        self.assertEqual(len(jpg_files), expected_count,
+                        f"Expected {expected_count} images, found {len(jpg_files)}")
 
     def test_image_file_exists(self):
         # All books should have an image file saved with the correct filename pattern

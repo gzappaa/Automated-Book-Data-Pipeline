@@ -29,10 +29,10 @@ print(f"{len(books)} books saved to {books_json_path}")
 ## ===== Step 2: Scrape book data & Download images =====
 books_with_details = get_book_list_with_details()
 
-# create books_with_details.json
-with open("data/books_with_details.json", "w", encoding="utf-8") as f:
+# create books_raw.json
+with open("data/books_raw.json", "w", encoding="utf-8") as f:
     json.dump(books_with_details, f, ensure_ascii=False, indent=4)
-print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")
+print(f"{len(books_with_details)} books with details saved to data/books_raw.json")
 
 ## ===== Download book images =====  
 print("Downloading book images...")

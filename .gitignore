@@ -4,7 +4,8 @@ books.json
 book_report.pdf
 book_report.xlsx
 images
-books_with_details.json
+books_by_category.json
+books_raw.json
+books_processed.json
 tests/data/html.py
 test.py
-books_with_categories.json

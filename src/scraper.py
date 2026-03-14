@@ -58,13 +58,12 @@ def get_book_details(book_url):
 
 
 def get_all_books():
-    """Scrape all books from main pages (paginated) with progress prints."""
+    """Scrape all books from paginated pages with simple progress marks."""
     all_books = []
     total_pages = 50
-    book_counter = 0
-
+    milestones = {0.25, 0.5, 0.75}  # 25%, 50%, 75%
+    
     def process_page(page_num):
-        nonlocal book_counter
         url = BASE_URL if page_num == 1 else urljoin(BASE_URL, f"catalogue/page-{page_num}.html")
         soup = get_soup(url)
         if soup is None:
@@ -72,12 +71,16 @@ def get_all_books():
             return []
 
         books_html = soup.find_all("article", class_="product_pod")
-        page_books = []
-        for book_html in books_html:
-            book_counter += 1
-            page_books.append(BookParser.parse_book(book_html))
-            print(f"Processing book {book_counter}/1000")
-        print(f"Page {page_num}/{total_pages} done with {len(page_books)} books")
+        page_books = [BookParser.parse_book(b) for b in books_html]
+
+        # Print simple progress
+        progress = page_num / total_pages
+        for m in sorted(milestones):
+            if progress >= m:
+                print(f"Progress: {int(m*100)}%")
+                milestones.remove(m)
+                break
+
         return page_books
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
@@ -92,8 +95,7 @@ def get_all_books():
 
 def get_book_list_with_details():
     """Fetch all books with their detailed info in parallel, including category."""
-    books = get_all_books()
-    total_books = len(books)
+    total_books = 1000
     book_counter = 0
 
     def fetch_details(book):
@@ -101,7 +103,8 @@ def get_book_list_with_details():
         details = get_book_details(book["book_url"])
         book.update(details)
         book_counter += 1
-        print(f"Book {book_counter}/{total_books} processed")
+        if book_counter % 50 == 0:
+            print(f"Book {book_counter}/{total_books} processed")
         return book
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
@@ -120,6 +123,6 @@ if __name__ == "__main__":
     print(f"{len(books)} books saved to data/books.json")
 
     books_with_details = get_book_list_with_details()
-    with open("data/books_with_details.json", "w", encoding="utf-8") as f:
+    with open("data/books_raw.json", "w", encoding="utf-8") as f:
         json.dump(books_with_details, f, ensure_ascii=False, indent=4)
-    print(f"{len(books_with_details)} books with details saved to data/books_with_details.json")
+    print(f"{len(books_with_details)} books with details saved to data/books_raw.json")
