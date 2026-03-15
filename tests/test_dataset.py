@@ -3,7 +3,20 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 from re import sub
+import os
 
+# --------------------------------------------------------------------------------------------------
+# THIS TEST DEPENDS ON LOCALLY GENERATED FILES
+# --------------------------------------------------------------------------------------------------
+# This test checks the final books JSON, images, and categories.
+# It should NOT run in CI/GitHub Actions because it depends on data that only exists after local generation.
+# Therefore, we use @unittest.skipIf(os.getenv("CI") == "true"):
+# - Locally: the test runs normally
+# - CI/GitHub Actions: the test is skipped
+# --------------------------------------------------------------------------------------------------
+
+
+@unittest.skipIf(os.getenv("CI") == "true", "Skip dataset test on CI")
 def normalize_category(name):
     return name.strip().lower()
 
@@ -116,7 +129,18 @@ class TestBooksJSON(unittest.TestCase):
                 missing_urls = [url for url in detailed_urls if url not in urls_simple]
                 self.assertFalse(missing_urls,
                                  f"Missing URLs in simple JSON for category '{category}': {missing_urls}")
+    
+    
+    def test_book_report_pdf_exists(self):
+        """Check that the book_report.pdf exists in the data folder"""
+        pdf_path = Path("data/book_report.pdf")
+        self.assertTrue(pdf_path.exists(), f"book_report.pdf not found at {pdf_path}")
 
+
+    def test_book_report_excel_exists(self):
+        """Check that the book_report.xlsx exists in the data folder"""
+        excel_path = Path("data/book_report.xlsx")
+        self.assertTrue(excel_path.exists(), f"book_report.xlsx not found at {excel_path}")
 
 
 

@@ -1,31 +1,57 @@
 import unittest
 from pathlib import Path
-from src.cover_downloader import download_images
+from shutil import rmtree
+from urllib.parse import urljoin
+from src.scraper import get_soup, get_book_details
+from src.cover_downloader import download_images, safe_filename
 
-class TestCoverDownloader(unittest.TestCase):
+class TestCoverDownloaderReal(unittest.TestCase):
 
     def setUp(self):
-        # 2 random images”
-        self.test_books = [
-             {"title": "Test Book 1", "image_url": "fake_url_1"},
-            {"title": "Test Book 2", "image_url": "fake_url_2"}
-        ]
-        self.test_folder = Path("data/test_images")
+        # Folder for test images
+        self.test_folder = Path("data/test_images_real")
+        # Remove it if it exists (cleanup from previous runs)
+        if self.test_folder.exists():
+            rmtree(self.test_folder)
         self.test_folder.mkdir(parents=True, exist_ok=True)
 
     def tearDown(self):
-        # self.test_folder cleanup after tests
-        for f in self.test_folder.iterdir():
-            f.unlink()
-        self.test_folder.rmdir()
+        # Cleanup after test
+        if self.test_folder.exists():
+            rmtree(self.test_folder)
 
-    def test_download_images_creates_files(self):
-        download_images(self.test_books, folder=self.test_folder)
-        for book in self.test_books:
-            filename = f"{book['title'].replace('/', '_').replace(':', '')}.jpg"
-            filepath = self.test_folder / filename
-            filepath.write_bytes(b"fake image bytes")  # had problem with actual download, so we mock the file creation
-            self.assertTrue((self.test_folder / filename).exists())
+    def test_download_two_real_images(self):
+        # Step 1: Get first page books only
+        soup = get_soup("https://books.toscrape.com/")
+        articles = soup.find_all("article", class_="product_pod")
+
+        test_books = []
+        for article in articles:
+            book_url = article.h3.a["href"]
+            if not book_url.startswith("http"):
+                book_url = urljoin("https://books.toscrape.com/", book_url)
+
+            details = get_book_details(book_url)
+            if details.get("table_data", {}).get("UPC"):
+                book_data = {
+                    "title": article.h3.a.text.strip(),
+                    "image_url": urljoin("https://books.toscrape.com/", article.find("img")["src"]),
+                    "table_data": details["table_data"]
+                }
+                test_books.append(book_data)
+
+            if len(test_books) == 2:  # Stop after 2 books
+                break
+
+        # Step 2: Download the images
+        download_images(test_books, folder=self.test_folder, max_workers=2)
+
+        # Step 3: Assert files exist
+        for book in test_books:
+            upc = book["table_data"]["UPC"]
+            safe_title = safe_filename(book["title"])
+            filepath = self.test_folder / f"{upc}_{safe_title}.jpg"
+            self.assertTrue(filepath.exists(), f"File not found: {filepath}")
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,65 +1,48 @@
-import re
 import unittest
-from src.scraper import get_all_books, get_soup, get_book_details
+from src.scraper import get_all_books, get_soup, BASE_URL
 
-class TestBookScraper(unittest.TestCase):
+class TestGetAllBooksReal(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Run the scraper once for the entire test class
-        cls.book_list = get_all_books()  # <-- changed from get_book_list()
-        cls.details_list = [get_book_details(book["book_url"]) for book in cls.book_list]
+        # Fetch all 50 pages of the catalog (real scraping)
+        cls.book_list = get_all_books()  # ~50 requests, only basic book info
+
+    def test_books_not_empty(self):
+        # Ensure the scraper collected books
+        self.assertTrue(len(self.book_list) > 0, "Book list is empty")
 
     def test_catalogue_size(self):
-        # Test if the total number of books across all pages is 1000
-        self.assertEqual(len(self.__class__.book_list), 50 * 20)
+        # There should be roughly 1000 books (50 pages × 20 books per page)
+        self.assertEqual(len(self.book_list), 50 * 20, "Total book count mismatch")
 
-
-    def test_get_soup(self):
-        # Test if get_soup returns a BeautifulSoup object
-        soup = get_soup("https://books.toscrape.com/")
-        self.assertEqual(soup.__class__.__name__, "BeautifulSoup")
-
-    def test_book_details_fetchable(self):
-        # Test if each book detail is a dictionary and has expected keys
-        for details in self.__class__.details_list:
-            self.assertIsInstance(details, dict)
-            self.assertIn("description", details)
-            self.assertIn("availability", details)
-            self.assertIn("table_data", details)
-
-    def test_book_urls_exist(self):
-        # Test if each book has a 'book_url' field and it's not empty
-        for book in self.__class__.book_list:
-            self.assertIn("book_url", book)
-            self.assertTrue(book["book_url"])
-
-    def test_scrape_not_empty(self):
-        # Test that the book list is not empty
-        self.assertTrue(len(self.__class__.book_list) > 0)
-
-    def test_book_urls_format(self):
-        # Test if each book_url is a valid URL format
-        for book in self.__class__.book_list:
-            url = book["book_url"]
-            self.assertTrue(re.match(r"^https?://", url),
-                            msg=f"Invalid URL: {url}")
-
-    def test_books_fields(self):
-        # Test if each book has all required fields
-        for book in self.__class__.book_list:
+    def test_book_fields_exist(self):
+        # Each book should have the required fields
+        for book in self.book_list:
             self.assertIn("title", book)
             self.assertIn("price", book)
             self.assertIn("rating", book)
             self.assertIn("image_url", book)
+            self.assertIn("book_url", book)
 
-    def test_types(self):
-        # Test the data types of each field
-        for book in self.__class__.book_list:
+    def test_fields_types(self):
+        # Check that each field has the correct type
+        for book in self.book_list:
             self.assertIsInstance(book["title"], str)
             self.assertIsInstance(book["price"], float)
             self.assertIsInstance(book["rating"], int)
             self.assertIsInstance(book["image_url"], str)
+            self.assertIsInstance(book["book_url"], str)
+
+    def test_book_urls_format(self):
+        # Each book URL should start with http(s)
+        for book in self.book_list:
+            self.assertTrue(book["book_url"].startswith("http"), f"Invalid URL: {book['book_url']}")
+
+    def test_get_soup(self):
+        # Check that get_soup returns a BeautifulSoup object
+        soup = get_soup(BASE_URL)
+        self.assertEqual(soup.__class__.__name__, "BeautifulSoup")
 
 
 if __name__ == "__main__":

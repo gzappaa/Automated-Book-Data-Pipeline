@@ -62,7 +62,7 @@ def main():
 
     # Step 7: Download book cover images
     print("\nDownloading book cover images...")
-    download_images(books_with_details, folder="data/images", max_workers=30)
+    download_images(books_with_details, folder="data/images", max_workers=8)
     
     print("\nPipeline completed successfully!")
 

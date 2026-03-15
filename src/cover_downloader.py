@@ -90,4 +90,4 @@ if __name__ == "__main__":
     with books_json_path.open("r", encoding="utf-8") as f:
         books = json.load(f)
 
-    download_images(books, folder="data/images", max_workers=30)
+    download_images(books, folder="data/images", max_workers=8)

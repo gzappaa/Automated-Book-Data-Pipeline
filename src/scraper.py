@@ -15,9 +15,8 @@ RETRY_DELAY = 5  # seconds between retries
 # Lock for thread-safe progress printing
 progress_lock = Lock()
 
-
+# Return BeautifulSoup object from URL with retries and UTF-8 encoding.
 def get_soup(url):
-    """Return BeautifulSoup object from URL with retries and UTF-8 encoding."""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             res = requests.get(url, timeout=30)
@@ -35,9 +34,8 @@ def get_soup(url):
             print(f"HTTP error for {url}: {e}")
             return None
 
-
+# Scrape book details including description, availability, table data, and category from breadcrumb.
 def get_book_details(book_url):
-    """Scrape book details including description, availability, table data, and category from breadcrumb."""
     soup = get_soup(book_url)
     if soup is None:
         print(f"Skipping {book_url}")
@@ -58,9 +56,8 @@ def get_book_details(book_url):
         "category": category
     }
 
-
+# Scrape all books from paginated pages with thread-safe progress prints
 def get_all_books():
-    """Scrape all books from paginated pages with thread-safe progress prints."""
     all_books = []
     total_pages = 50
     milestones = {0.25, 0.5, 0.75}
@@ -97,9 +94,8 @@ def get_all_books():
     print(f"Total books collected: {len(all_books)}")
     return all_books
 
-
+# Fetch detailed info for each book using multithreading with progress tracking
 def get_book_list_with_details(books):
-    """Fetch all books with their detailed info in parallel, including category."""
     total_books = len(books)
     book_counter = 0
     counter_lock = Lock()

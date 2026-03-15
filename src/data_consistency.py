@@ -4,7 +4,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 
-
+## I thought that some of the data was redundant, and this script confirmed to me that:
+## All books have Product Type = 'Books'.
+## All books have consistent availability.
+## All books have Tax = 0.0.
+## All books have Number of reviews = 0.
+## Therefore, they will be removed in the cleaning step
 
 # Load the books JSON
 with open("data/books_raw.json", "r", encoding="utf-8") as f:
