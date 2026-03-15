@@ -16,11 +16,11 @@ import os
 # --------------------------------------------------------------------------------------------------
 
 
-@unittest.skipIf(os.getenv("CI") == "true", "Skip dataset test on CI")
+
 def normalize_category(name):
     return name.strip().lower()
 
-
+@unittest.skipIf(os.getenv("CI") == "true", "Skip dataset test on CI")
 class TestBooksJSON(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -35,7 +35,7 @@ class TestBooksJSON(unittest.TestCase):
 
         # Images folder
         cls.images_folder = Path("data/images")
-
+    
     def test_all_books_have_required_fields(self):
         # All books should have title, table_data with UPC, and a non-empty UPC
         for book in self.books:
